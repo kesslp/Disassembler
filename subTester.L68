@@ -1,6 +1,6 @@
-00000400 Starting Address
+00001000 Starting Address
 Assembler used: EASy68K Editor/Assembler v5.15.02
-Created On: 6/3/2015 1:55:37 AM
+Created On: 6/3/2015 12:29:20 AM
 
 00000000                             1  *-----------------------------------------------------------
 00000000                             2  * Title      :
@@ -8,51 +8,51 @@ Created On: 6/3/2015 1:55:37 AM
 00000000                             4  * Date       :
 00000000                             5  * Description:
 00000000                             6  *-----------------------------------------------------------
-00000400                             7      ORG    $400
-00000400                             8  START:                  ; first instruction of program
-00000400                             9  
-00000400                            10  * Put program code here
-00000400                            11        
-00000400  9200                      12  begin   SUB.B   D0,D1          *works
-00000402  9843                      13  this    SUB.W   D3,D4
-00000404  68FA                      14          BVC     begin           *works
-00000406  9C85                      15  here    SUB.L   D5,D6          *works
-00000408  9010                      16          SUB.B   (A0),D0        *works
-0000040A  9115                      17          SUB.B    D0,(A5)       *works
-0000040C  9656                      18          SUB.W   (A6),D3        *works
-0000040E  9B94                      19          SUB.L    D5,(A4)       *works
-00000410  5F02                      20          SUBQ.B    #7,D2        *does not work
-00000412  6D00 0002                 21          BLT      adds
-00000416                            22          
-00000416  D200                      23  adds    ADD.B   D0,D1
-00000418  D642                      24          ADD.W   D2,D3
-0000041A  DA84                      25          ADD.L   D4,D5
-0000041C  D611                      26          ADD.B   (A1),D3
-0000041E                            27          
-0000041E  D4C9                      28          ADDA.W  A1,A2
-00000420  DBCB                      29          ADDA.L  A3,A5
-00000422                            30          
-00000422  4400                      31          NEG.B   D0
-00000424  4441                      32          NEG.W   D1
-00000426  4482                      33          NEG.L   D2
-00000428                            34          
-00000428                            35          
-00000428  81C1                      36          DIVS.W    D1,D0        *works
-0000042A  89D0                      37          DIVS.W    (A0),D4      *works
-0000042C                            38          *DIVS.W    #10,D4       *does not work
-0000042C  0600 000A                 39          ADD.B     #10,D0       *does not work
-00000430                            40          *DIVS.L      $00000000,D1:D2 *dont know the syntax
-00000430  43D2                      41          LEA     (A2),A1
-00000432  60CC                      42          BRA     begin
-00000434                            43  
-00000434                            44  
-00000434                            45  DONE
-00000434  FFFF FFFF                 46      SIMHALT             ; halt simulator
-00000438                            47  
-00000438                            48  * Put variables and constants here
-00000438                            49  
-00000438                            50  
-00000438                            51      END    START        ; last line of source
+00001000                             7      ORG    $1000
+00001000                             8  START:                  ; first instruction of program
+00001000                             9  
+00001000                            10  * Put program code here
+00001000                            11        
+00001000  9200                      12  begin   SUB.B   D0,D1          *works
+00001002  9843                      13  this    SUB.W   D3,D4
+00001004  68FA                      14          BVC     begin           *works
+00001006  9C85                      15  here    SUB.L   D5,D6          *works
+00001008  9010                      16          SUB.B   (A0),D0        *works
+0000100A  9115                      17          SUB.B    D0,(A5)       *works
+0000100C  9656                      18          SUB.W   (A6),D3        *works
+0000100E  9B94                      19          SUB.L    D5,(A4)       *works
+00001010  5F02                      20          SUBQ.B    #7,D2        *does not work
+00001012  6D00 0002                 21          BLT      adds
+00001016                            22          
+00001016  D200                      23  adds    ADD.B   D0,D1
+00001018  D642                      24          ADD.W   D2,D3
+0000101A  DA84                      25          ADD.L   D4,D5
+0000101C  D611                      26          ADD.B   (A1),D3
+0000101E                            27          
+0000101E  D4C9                      28          ADDA.W  A1,A2
+00001020  DBCB                      29          ADDA.L  A3,A5
+00001022                            30          
+00001022  4400                      31          NEG.B   D0
+00001024  4441                      32          NEG.W   D1
+00001026  4482                      33          NEG.L   D2
+00001028                            34          
+00001028                            35          
+00001028  81C1                      36          DIVS.W    D1,D0        *works
+0000102A  89D0                      37          DIVS.W    (A0),D4      *works
+0000102C                            38          *DIVS.W    #10,D4       *does not work
+0000102C  0600 000A                 39          ADD.B     #10,D0       *does not work
+00001030                            40          *DIVS.L      $00000000,D1:D2 *dont know the syntax
+00001030  43D2                      41          LEA     (A2),A1
+00001032  60CC                      42          BRA     begin
+00001034                            43  
+00001034                            44  
+00001034                            45  DONE
+00001034  FFFF FFFF                 46      SIMHALT             ; halt simulator
+00001038                            47  
+00001038                            48  * Put variables and constants here
+00001038                            49  
+00001038                            50  
+00001038                            51      END    START        ; last line of source
 
 No errors detected
 No warnings generated
@@ -61,9 +61,9 @@ No warnings generated
 SYMBOL TABLE INFORMATION
 Symbol-name         Value
 -------------------------
-ADDS                416
-BEGIN               400
-DONE                434
-HERE                406
-START               400
-THIS                402
+ADDS                1016
+BEGIN               1000
+DONE                1034
+HERE                1006
+START               1000
+THIS                1002
