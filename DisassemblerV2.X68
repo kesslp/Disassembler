@@ -17,7 +17,7 @@ line_count  EQU 30
 
 *---- User input address range -----
 
-                ORG         $400                        * start of the program
+                ORG         $1000                       * start of the program
                 LEA         stack,SP                    * initialize the stack
                 CLR.B       D0                          * clear D0
                 LEA         start_addr_msg, A1          * ask for starting address
@@ -566,7 +566,7 @@ divsWCheck
     
 eorOpCode
     CMP.B   #11,D5
-    BNE     mulsWOpCode
+    BNE     shiftsOpCode
     
     MOVE.L  D4,D5
     ROL.L   #8,D5
@@ -613,6 +613,158 @@ cmpOpCode
     
     BRA     DONE
    
+shiftsOpCode
+    CMP.B   #14,D5
+    BNE     mulsWOpCode
+    
+    MOVE.L  D4,D5
+    ROR.W   #3,D5
+    AND.L   #$00000003,D5
+    
+lsdOpCode
+    CMP.B   #1,D5
+    BNE     asdOpCode
+    
+lsdMethod
+    LEA     outputLS,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    JSR     leftRight
+    
+    JSR     dotOpMode
+    
+    JSR     shiftSourceEA
+    
+    LEA     outputComma,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    JSR     shiftDestEA
+    
+    BRA     DONE
+ 
+asdOpCode
+    CMP.B   #0,D5
+    BNE     rodOpCode
+    
+    LEA     outputAS,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    JSR     leftRight
+    
+    JSR     dotOpMode
+    
+    JSR     shiftSourceEA
+    
+    LEA     outputComma,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    JSR     shiftDestEA    
+    
+    BRA     DONE
+    
+rodOpCode
+    CMP.B   #3,D5
+    BNE     DONE
+    
+    LEA     outputRO,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    JSR     leftRight
+    
+    JSR     dotOpMode
+    
+    JSR     shiftSourceEA
+    
+    LEA     outputComma,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    JSR     shiftDestEA
+    
+    BRA     DONE
+    
+leftRight
+    MOVE.L  D4,D3
+    ROL.W   #8,D3
+    AND.L   #$00000001,D3
+
+    CMP.B   #0,D3
+    BEQ     rightRight
+    
+    LEA     outputLeft,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    RTS
+    
+rightRight
+    LEA     outputRight,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    RTS
+    
+shiftSourceEA
+    MOVE.L  D4,D2
+    ROR.W   #5,D2
+    AND.L   #$00000001,D2
+
+    MOVE.L  D4,D3
+    ROL.W   #7,D3
+    AND.L   #$00000007,D3
+    
+    CMP.B   #0,D2
+    BEQ     shiftImmediateEA
+    
+    LEA     outputDn,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    MOVE.L  D3,D1
+    MOVE.B  #3,D0
+    TRAP    #15
+    
+    RTS
+    
+shiftImmediateEA
+    LEA     outputPound,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    CMP.B   #0,D3
+    BEQ     shiftImmediateEight
+    
+    MOVE.L  D3,D1
+    MOVE.B  #3,D0
+    TRAP    #15
+    
+    RTS
+    
+shiftImmediateEight
+    MOVE.L  #8,D1
+    MOVE.B  #3,D0
+    TRAP    #15
+    
+    RTS
+    
+shiftDestEA
+    MOVE.L  D4,D3
+    AND.L   #$00000007,D3
+    
+    LEA     outputDn,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    MOVE.L  D3,D1
+    MOVE.B  #3,D0
+    TRAP    #15
+    
+    RTS
     
 mulsWOpCode
     CMP.B   #12,D5
@@ -1164,6 +1316,12 @@ outputEOR   DC.B    'EOR',0
 outputCMPI  DC.B    'CMPI',0
 outputCMP   DC.B    'CMP',0
 outputBCLR  DC.B    'BCLR ',0
+outputLS    DC.B    'LS',0
+outputAS    DC.B    'AS',0
+outputRO    DC.B    'RO',0
+outputLeft  DC.B    'L',0
+outputRight DC.B    'R',0
+
 outputBCS   DC.B    'BCS ',0
 outputBGE   DC.B    'BGE ',0
 outputBCT   DC.B    'BCT ',0
@@ -1190,7 +1348,8 @@ outputNegSign   DC.B    '-',0
 outputStart     DC.B    'Disassembling Initiated',0
 outputEnd       DC.B    'Program Disassembled',0
 outputContinue  DC.B    'Press ENTER key to continue disassembling',CR,LF,0
-    END    $400        ; last line of source
+    END    $1000        ; last line of source
+
 
 
 
