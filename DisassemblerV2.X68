@@ -11,7 +11,7 @@ mask        EQU $0000000F
 ascii_mask  EQU $00FF
 counter     EQU 0
 stack       EQU $B000
-page_count  EQU 30
+line_count  EQU 30
 
 *---- User input address range -----
 
@@ -45,6 +45,17 @@ page_count  EQU 30
                 MOVE.W      end_val, D6                 * check if result is correct
                 MOVEA.W     st_val,A5                   * store start val in A5
                 MOVEA.W     end_val,A6                  * store end val in A6
+                
+                LEA         outputStart,A1              *ouput starting messaage
+                MOVE.B      #14,D0          
+                TRAP        #15
+                
+                LEA         outputNextLine,A1           *output nextline
+                MOVE.B      #14,D0
+                TRAP        #15
+                
+                MOVE.B      #line_count,(A3)
+                SUBQ.B      #2,(A3)
                 BRA         getOpCode                   * Jump to getOpCode sub routine
 
                 
@@ -113,12 +124,14 @@ getOpCode                        *Gets opcode
     CLR.L   D5
     CLR.L   D4
     
+    SUBQ.B  #1,(A3)
+    CMP.B   #0,(A3)
+    BEQ     pageContinue
+    
     MOVE.W  A5,D1               *move starting addr into D1
     MOVE.B  #15,D0              *convert number into hex and output to console
     MOVE.B  #16,D2
-    TRAP    #15
-    
-    *MOVEA.L  A0,A1             *move this instruction after address output
+    TRAP    #15    
     MOVE.W  (A5)+,D4            *move data at starting addr to D4
     
     CLR.L   D1
@@ -574,41 +587,206 @@ negMethod
 braOpCode
     MOVE.W  D4,D3               *move the opcode word into D3
     ROL.W   #8,D3               *isolate the last byte
-    CMP.B   #$60,D3
-    BNE     dataOpCode
+    CMP.B   #$60,D3             *is it a BRA?
+    BNE     bccOpCode           *its data then
     
 braMethod
-    LEA     outputBRA,A1
+    LEA     outputBRA,A1        
     MOVE.B  #14,D0
     TRAP    #15
-    
+
+
+bccDisplacement    
     MOVE.B  D4,D3
     AND.W   #$00FF,D3
     CMP.B   #$00,D3
-    BEQ     SixteenBitDisplacement
+    BEQ     bitDisplacement16
     CMP.B   #$FF,D3
-    BEQ     ThirtyTwoBitDisplacement
-    ROL.B   #4,D3
-    CMP.B   #$F,D3
-    JSR     printNeg
-    CLR.L   D1
-    AND.B   #$0F,D3
-    MOVE.B  D3,D1
-    MOVE.B  #3,D0
-    TRAP    #15
+    BEQ     bitDisplacement32
+    ROL.B   #8,D3
+    EOR.W   #$FF,D3
+    ADD.W   #1,D3
     
-    BRA     DONE
-    
-SixteenBitDisplacement
-ThirtyTwoBitDisplacement
-printNeg
     LEA     outputNegSign,A1
     MOVE.B  #14,D0
     TRAP    #15
-    ROL.B   #4,D3
-    RTS
-       
     
+    MOVE.W  D3,D1
+    MOVE.B  #3,D0
+    TRAP    #15
+    
+    LEA     outputSpace,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    MOVE.W  A5,A0
+    SUBA.W  D3,A0
+    MOVE.W  A0,D1
+    MOVE.B  #15,D0
+    MOVE.B  #16,D2
+    TRAP    #15
+    
+    MOVE.W  A4,A0
+    
+    
+    BRA     DONE
+   
+bitDisplacement16
+    
+    MOVE.W  (A5)+,D4
+    MOVE.W  D4,D3
+    ROL.W   #4,D3
+    AND.W   #$000F,D3
+    CMP.W   #8,D3
+    BGE     negBit16
+    
+    MOVE.W  D4,D1
+    MOVE.B  #3,D0
+    TRAP    #15
+    
+    LEA     outputSpace,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    MOVE.W  A5,A0
+    ADDA.W  D4,A0
+    MOVE.W  A0,D1
+    MOVE.B  #15,D0
+    MOVE.B  #16,D2
+    TRAP    #15
+    
+    MOVE.W  A4,A0
+    
+    BRA DONE
+    
+negBit16
+
+    EOR.W   #$FFFF,D4
+    ADD.W   #1,D4
+    
+    LEA     outputNegSign,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    MOVE.W  D4,D1
+    MOVE.B  #3,D0
+    TRAP    #15
+    
+    LEA     outputSpace,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    MOVE.W  A5,A0
+    SUBA.W  D4,A0
+    MOVE.W  A0,D1
+    MOVE.B  #15,D0
+    MOVE.B  #16,D2
+    TRAP    #15
+    
+    MOVE.W  A4,A0
+    
+    BRA     DONE
+    
+bitDisplacement32
+
+    MOVE.L  (A5)+,D4
+    MOVE.L  D4,D3
+    ROL.W   #4,D3
+    AND.L   #$0000000F,D3
+    CMP.L   #8,D3
+    BGE     negBit32
+    
+    MOVE.L  D4,D1
+    MOVE.B  #3,D0
+    TRAP    #15
+    
+    LEA     outputSpace,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    MOVE.L  A5,A0
+    ADDA.L  D4,A0
+    MOVE.L  A0,D1
+    MOVE.B  #15,D0
+    MOVE.B  #16,D2
+    TRAP    #15
+    
+    MOVE.L  A4,A0
+    
+    BRA DONE
+
+negBit32
+
+    EOR.L   #$FFFFFFFF,D4
+    ADD.L   #1,D4
+    
+    LEA     outputNegSign,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    MOVE.L  D4,D1
+    MOVE.B  #3,D0
+    TRAP    #15
+    
+    LEA     outputSpace,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    MOVE.L  A5,A0
+    SUBA.L  D4,A0
+    MOVE.L  A0,D1
+    MOVE.B  #15,D0
+    MOVE.B  #16,D2
+    TRAP    #15
+    
+    MOVE.L  A4,A0
+    
+    BRA     DONE
+    
+bccOpCode
+    CMP.B   #6,D5               *is it Bcc?
+    BNE     dataOpCode          *its data then
+    
+bccMethod
+    MOVE.W  D4,D3
+    ROL.W   #8,D3
+    AND.W   #$000F,D3
+    CMP.B   #5,D3
+    BEQ     bcs
+    CMP.B   #$C,D3
+    BEQ     bge
+    CMP.B   #$D,D3
+    BEQ     bct
+    BRA     bvc
+    
+bcs
+    LEA     outputBCS,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    BRA     bccDisplacement
+    
+bge
+    LEA     outputBGE,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    BRA     bccDisplacement
+
+bct
+    LEA     outputBCT,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    BRA     bccDisplacement
+    
+bvc
+    LEA     outputBVC,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    BRA     bccDisplacement
+           
 dataOpCode
     CLR.L   D3
     LEA     outputData,A1
@@ -857,7 +1035,16 @@ addaDestEA                      *Sets up the dest mode to be proper
     AND.L   #$00000001,D2       *is always an Address
     
     BRA     DnMode
-        
+    
+pageContinue
+    LEA     outputContinue,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    MOVE.B  #5,D0
+    TRAP    #15
+    MOVE.B  #line_count,(A3)
+    JMP     getOpCode
+    
 DONE
     CMP.W   A5,A6
     BLT     END   
@@ -867,6 +1054,13 @@ DONE
     JMP     getOpCode
     
 END
+    LEA     outputNextLine,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+
+    LEA     outputEnd,A1
+    MOVE.B  #14,D0
+    TRAP    #15
     SIMHALT             ; halt simulator
 
 * Put variables and constants here
@@ -897,6 +1091,10 @@ outputORI   DC.B    'ORI',0
 outputOR    DC.B    'OR',0
 outputEOR   DC.B    'EOR',0
 outputCMPI  DC.B    'CMPI',0
+outputBCS   DC.B    'BCS ',0
+outputBGE   DC.B    'BGE ',0
+outputBCT   DC.B    'BCT ',0
+outputBVC   DC.B    'BVC ',0
 
 outputByte  DC.B    '.B ',0
 outputWord  DC.B    '.W ',0
@@ -916,7 +1114,11 @@ outputNextLine  DC.B    ' ',CR,LF,0
 outputSpace     DC.B    ' ',0
 outputColon     DC.B    ': ',0
 outputNegSign   DC.B    '-',0
+outputStart     DC.B    'Disassembling Initiated',0
+outputEnd       DC.B    'Program Disassembled',0
+outputContinue  DC.B    'Press ENTER key to continue disassembling',CR,LF,0
     END    $400        ; last line of source
+
 *~Font name~Courier New~
 *~Font size~10~
 *~Tab type~1~
