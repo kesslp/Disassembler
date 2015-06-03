@@ -17,7 +17,7 @@ line_count  EQU 30
 
 *---- User input address range -----
 
-                ORG         $400                        * start of the program
+                ORG         $1000                       * start of the program
                 LEA         stack,SP                    * initialize the stack
                 CLR.B       D0                          * clear D0
                 LEA         start_addr_msg, A1          * ask for starting address
@@ -634,18 +634,19 @@ mulsWMethod
     BRA     DONE
     
 negOpCode
-    MOVE.W  D4,D3
-    ROL.W   #8,D3
-    CMP.B   #$44,D3
-    BNE     braOpCode
+    MOVE.W  D4,D3               *move full opcode into D3
+    ROL.W   #8,D3               *move most sig 8 bits
+    CMP.B   #$44,D3             *is it a NEG?             
+    BNE     braOpCode           *check if its a BRA
     
 negMethod
     LEA     outputNEG,A1        *output NEG to the console
     MOVE.B  #14,D0
     TRAP    #15
     
-    CLR.L   D3
-    MOVE.W  D4,D3               *move original word from D4
+    ROL.W   #8,D3
+    *CLR.L   D3
+    *MOVE.W  D4,D3               *move original word from D4
     MOVE.B  #10,D1              *hacks
     ROL.W   D1,D3               *ROL by 10
     AND.L   #00000003,D3        *Mask 
@@ -704,6 +705,7 @@ bccDisplacement
    
 bitDisplacement16
     
+    MOVE.W  A5,A0
     MOVE.W  (A5)+,D4
     MOVE.W  D4,D3
     ROL.W   #4,D3
@@ -719,7 +721,6 @@ bitDisplacement16
     MOVE.B  #14,D0
     TRAP    #15
     
-    MOVE.W  A5,A0
     ADDA.W  D4,A0
     MOVE.W  A0,D1
     MOVE.B  #15,D0
@@ -747,7 +748,7 @@ negBit16
     MOVE.B  #14,D0
     TRAP    #15
     
-    MOVE.W  A5,A0
+    *MOVE.W  A5,A0
     SUBA.W  D4,A0
     MOVE.W  A0,D1
     MOVE.B  #15,D0
@@ -760,6 +761,7 @@ negBit16
     
 bitDisplacement32
 
+    MOVE.L  A5,A0
     MOVE.L  (A5)+,D4
     MOVE.L  D4,D3
     ROL.W   #4,D3
@@ -775,7 +777,6 @@ bitDisplacement32
     MOVE.B  #14,D0
     TRAP    #15
     
-    MOVE.L  A5,A0
     ADDA.L  D4,A0
     MOVE.L  A0,D1
     MOVE.B  #15,D0
@@ -803,7 +804,7 @@ negBit32
     MOVE.B  #14,D0
     TRAP    #15
     
-    MOVE.L  A5,A0
+    *MOVE.L  A5,A0
     SUBA.L  D4,A0
     MOVE.L  A0,D1
     MOVE.B  #15,D0
@@ -816,7 +817,7 @@ negBit32
     
 bccOpCode
     CMP.B   #6,D5               *is it Bcc?
-    BNE     dataOpCode          *its data then
+    BNE     shiftOpCode          *its data then
     
 bccMethod
     MOVE.W  D4,D3
@@ -862,6 +863,11 @@ dataOpCode
     CLR.L   D3
     LEA     outputData,A1
     MOVE.B  #14,D0
+    TRAP    #15
+    
+    MOVE.W  (A5),D1
+    MOVE.B  #15,D0
+    MOVE.B  #16,D2
     TRAP    #15
     
     BRA     DONE
@@ -1136,14 +1142,6 @@ END
 
 * Put variables and constants here
 
-code        DC.W    $43D2
-
-
-addCode     DC.W    $D640
-
-moveCode1   DC.W    $303C
-moveCode2   DC.W    $0011
-
 outputADD   DC.B    'ADD',0
 outputADDA  DC.B    'A',0
 outputSUB   DC.B    'SUB',0
@@ -1168,6 +1166,12 @@ outputBCS   DC.B    'BCS ',0
 outputBGE   DC.B    'BGE ',0
 outputBCT   DC.B    'BCT ',0
 outputBVC   DC.B    'BVC ',0
+outputLSL   DC.B    'LSL',0
+outputLSR   DC.B    'LSR',0
+outputASL   DC.B    'ASL',0
+outputASR   DC.B    'ASR',0
+outputROL   DC.B    'ROL',0
+outputROR   DC.B    'ROR',0
 
 outputByte  DC.B    '.B ',0
 outputWord  DC.B    '.W ',0
@@ -1190,7 +1194,9 @@ outputNegSign   DC.B    '-',0
 outputStart     DC.B    'Disassembling Initiated',0
 outputEnd       DC.B    'Program Disassembled',0
 outputContinue  DC.B    'Press ENTER key to continue disassembling',CR,LF,0
-    END    $400        ; last line of source
+    END    $1000        ; last line of source
+
+
 
 
 
