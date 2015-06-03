@@ -2,7 +2,7 @@
 * Title      :  Disassembler
 * Written by :  Paul Kessler and Joscelyn Kim
 * Date       :  199X
-* Description:  This program takes assembled code ans disassembles it into 
+* Description:  This program takes assembled code and disassembles it into 
 *               assembly language readable by humans.  The program will be 
 *               disassembed in a user defined address range
 *-----------------------------------------------------------
@@ -856,6 +856,7 @@ bccDisplacement
    
 bitDisplacement16
     
+    MOVE.W  A5,A0
     MOVE.W  (A5)+,D4
     MOVE.W  D4,D3
     ROL.W   #4,D3
@@ -871,7 +872,6 @@ bitDisplacement16
     MOVE.B  #14,D0
     TRAP    #15
     
-    MOVE.W  A5,A0
     ADDA.W  D4,A0
     MOVE.W  A0,D1
     MOVE.B  #15,D0
@@ -899,7 +899,7 @@ negBit16
     MOVE.B  #14,D0
     TRAP    #15
     
-    MOVE.W  A5,A0
+    *MOVE.W  A5,A0
     SUBA.W  D4,A0
     MOVE.W  A0,D1
     MOVE.B  #15,D0
@@ -912,6 +912,7 @@ negBit16
     
 bitDisplacement32
 
+    MOVE.L  A5,A0
     MOVE.L  (A5)+,D4
     MOVE.L  D4,D3
     ROL.W   #4,D3
@@ -927,7 +928,6 @@ bitDisplacement32
     MOVE.B  #14,D0
     TRAP    #15
     
-    MOVE.L  A5,A0
     ADDA.L  D4,A0
     MOVE.L  A0,D1
     MOVE.B  #15,D0
@@ -955,7 +955,7 @@ negBit32
     MOVE.B  #14,D0
     TRAP    #15
     
-    MOVE.L  A5,A0
+    *MOVE.L  A5,A0
     SUBA.L  D4,A0
     MOVE.L  A0,D1
     MOVE.B  #15,D0
@@ -968,7 +968,7 @@ negBit32
     
 bccOpCode
     CMP.B   #6,D5               *is it Bcc?
-    BNE     dataOpCode          *its data then
+    BNE     jsrOpCode          *its data then
     
 bccMethod
     MOVE.W  D4,D3
@@ -1009,6 +1009,27 @@ bvc
     TRAP    #15
     
     BRA     bccDisplacement
+    
+jsrOpCode
+    MOVE.W  D4,D3
+    ROL.W   #8,D3
+    AND.W   #$00FF,D3
+    CMP.B   #$4E,D3
+    BNE     dataOpCode
+    
+jsrMethod
+    LEA     outputJSR,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    MOVE.L  A5,A0
+    MOVE.L  (A5)+,D4
+    MOVE.L  D4,D1
+    MOVE.B  #15,D0
+    MOVE.B  #16,D2
+    TRAP    #15
+    
+    BRA     DONE
            
 dataOpCode
     CLR.L   D3
@@ -1310,6 +1331,7 @@ outputMOVEA DC.B    'MOVEA',0
 outputMULSW DC.B    'MULS.W ',0
 outputDIVSW DC.B    'DIVS.W ',0
 outputNOP   DC.B    'NOP ',0
+outputJSR   DC.B    'JSR ',0
 outputRTS   DC.B    'RTS ',0
 outputLEA   DC.B    'LEA ',0
 outputData  DC.B    'DATA ',0
@@ -1354,6 +1376,7 @@ outputStart     DC.B    'Disassembling Initiated',0
 outputEnd       DC.B    'Program Disassembled',0
 outputContinue  DC.B    'Press ENTER key to continue disassembling',CR,LF,0
     END    $1000        ; last line of source
+
 
 
 
