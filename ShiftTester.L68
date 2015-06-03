@@ -1,0 +1,36 @@
+00000400 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.15.02
+Created On: 6/3/2015 12:50:47 AM
+
+00000000                             1  *-----------------------------------------------------------
+00000000                             2  * Title      :
+00000000                             3  * Written by :
+00000000                             4  * Date       :
+00000000                             5  * Description:
+00000000                             6  *-----------------------------------------------------------
+00000400                             7      ORG    $400
+00000400                             8  START:                  ; first instruction of program
+00000400                             9  
+00000400                            10  * Put program code here
+00000400                            11  
+00000400  E708                      12      LSL.B   #3,D0
+00000402  E809                      13      LSR.B   #4,D1
+00000404  E700                      14      ASL.B   #3,D0
+00000406  EC02                      15      ASR.B   #6,D2
+00000408  E51B                      16      ROL.B   #2,D3
+0000040A  EE1E                      17      ROR.B   #7,D6
+0000040C                            18  
+0000040C  FFFF FFFF                 19      SIMHALT             ; halt simulator
+00000410                            20  
+00000410                            21  * Put variables and constants here
+00000410                            22  
+00000410                            23      END    $400        ; last line of source
+
+No errors detected
+No warnings generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+START               400

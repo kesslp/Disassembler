@@ -566,7 +566,7 @@ divsWCheck
     
 eorOpCode
     CMP.B   #11,D5
-    BNE     mulsWOpCode
+    BNE     shiftsOpCode
     
     MOVE.L  D4,D5
     ROL.L   #8,D5
@@ -613,6 +613,158 @@ cmpOpCode
     
     BRA     DONE
    
+shiftsOpCode
+    CMP.B   #14,D5
+    BNE     mulsWOpCode
+    
+    MOVE.L  D4,D5
+    ROR.W   #3,D5
+    AND.L   #$00000003,D5
+    
+lsdOpCode
+    CMP.B   #1,D5
+    BNE     asdOpCode
+    
+lsdMethod
+    LEA     outputLS,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    JSR     leftRight
+    
+    JSR     dotOpMode
+    
+    JSR     shiftSourceEA
+    
+    LEA     outputComma,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    JSR     shiftDestEA
+    
+    BRA     DONE
+ 
+asdOpCode
+    CMP.B   #0,D5
+    BNE     rodOpCode
+    
+    LEA     outputAS,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    JSR     leftRight
+    
+    JSR     dotOpMode
+    
+    JSR     shiftSourceEA
+    
+    LEA     outputComma,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    JSR     shiftDestEA    
+    
+    BRA     DONE
+    
+rodOpCode
+    CMP.B   #3,D5
+    BNE     DONE
+    
+    LEA     outputRO,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    JSR     leftRight
+    
+    JSR     dotOpMode
+    
+    JSR     shiftSourceEA
+    
+    LEA     outputComma,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    JSR     shiftDestEA
+    
+    BRA     DONE
+    
+leftRight
+    MOVE.L  D4,D3
+    ROL.W   #8,D3
+    AND.L   #$00000001,D3
+
+    CMP.B   #0,D3
+    BEQ     rightRight
+    
+    LEA     outputLeft,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    RTS
+    
+rightRight
+    LEA     outputRight,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    RTS
+    
+shiftSourceEA
+    MOVE.L  D4,D2
+    ROR.W   #5,D2
+    AND.L   #$00000001,D2
+
+    MOVE.L  D4,D3
+    ROL.W   #7,D3
+    AND.L   #$00000007,D3
+    
+    CMP.B   #0,D2
+    BEQ     shiftImmediateEA
+    
+    LEA     outputDn,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    MOVE.L  D3,D1
+    MOVE.B  #3,D0
+    TRAP    #15
+    
+    RTS
+    
+shiftImmediateEA
+    LEA     outputPound,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    CMP.B   #0,D3
+    BEQ     shiftImmediateEight
+    
+    MOVE.L  D3,D1
+    MOVE.B  #3,D0
+    TRAP    #15
+    
+    RTS
+    
+shiftImmediateEight
+    MOVE.L  #8,D1
+    MOVE.B  #3,D0
+    TRAP    #15
+    
+    RTS
+    
+shiftDestEA
+    MOVE.L  D4,D3
+    AND.L   #$00000007,D3
+    
+    LEA     outputDn,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    MOVE.L  D3,D1
+    MOVE.B  #3,D0
+    TRAP    #15
+    
+    RTS
     
 mulsWOpCode
     CMP.B   #12,D5
@@ -634,19 +786,18 @@ mulsWMethod
     BRA     DONE
     
 negOpCode
-    MOVE.W  D4,D3               *move full opcode into D3
-    ROL.W   #8,D3               *move most sig 8 bits
-    CMP.B   #$44,D3             *is it a NEG?             
-    BNE     braOpCode           *check if its a BRA
+    MOVE.W  D4,D3
+    ROL.W   #8,D3
+    CMP.B   #$44,D3
+    BNE     braOpCode
     
 negMethod
     LEA     outputNEG,A1        *output NEG to the console
     MOVE.B  #14,D0
     TRAP    #15
     
-    ROL.W   #8,D3
-    *CLR.L   D3
-    *MOVE.W  D4,D3               *move original word from D4
+    CLR.L   D3
+    MOVE.W  D4,D3               *move original word from D4
     MOVE.B  #10,D1              *hacks
     ROL.W   D1,D3               *ROL by 10
     AND.L   #00000003,D3        *Mask 
@@ -705,7 +856,6 @@ bccDisplacement
    
 bitDisplacement16
     
-    MOVE.W  A5,A0
     MOVE.W  (A5)+,D4
     MOVE.W  D4,D3
     ROL.W   #4,D3
@@ -721,6 +871,7 @@ bitDisplacement16
     MOVE.B  #14,D0
     TRAP    #15
     
+    MOVE.W  A5,A0
     ADDA.W  D4,A0
     MOVE.W  A0,D1
     MOVE.B  #15,D0
@@ -748,7 +899,7 @@ negBit16
     MOVE.B  #14,D0
     TRAP    #15
     
-    *MOVE.W  A5,A0
+    MOVE.W  A5,A0
     SUBA.W  D4,A0
     MOVE.W  A0,D1
     MOVE.B  #15,D0
@@ -761,7 +912,6 @@ negBit16
     
 bitDisplacement32
 
-    MOVE.L  A5,A0
     MOVE.L  (A5)+,D4
     MOVE.L  D4,D3
     ROL.W   #4,D3
@@ -777,6 +927,7 @@ bitDisplacement32
     MOVE.B  #14,D0
     TRAP    #15
     
+    MOVE.L  A5,A0
     ADDA.L  D4,A0
     MOVE.L  A0,D1
     MOVE.B  #15,D0
@@ -804,7 +955,7 @@ negBit32
     MOVE.B  #14,D0
     TRAP    #15
     
-    *MOVE.L  A5,A0
+    MOVE.L  A5,A0
     SUBA.L  D4,A0
     MOVE.L  A0,D1
     MOVE.B  #15,D0
@@ -817,7 +968,7 @@ negBit32
     
 bccOpCode
     CMP.B   #6,D5               *is it Bcc?
-    BNE     shiftOpCode          *its data then
+    BNE     dataOpCode          *its data then
     
 bccMethod
     MOVE.W  D4,D3
@@ -1142,6 +1293,14 @@ END
 
 * Put variables and constants here
 
+code        DC.W    $43D2
+
+
+addCode     DC.W    $D640
+
+moveCode1   DC.W    $303C
+moveCode2   DC.W    $0011
+
 outputADD   DC.B    'ADD',0
 outputADDA  DC.B    'A',0
 outputSUB   DC.B    'SUB',0
@@ -1162,16 +1321,16 @@ outputEOR   DC.B    'EOR',0
 outputCMPI  DC.B    'CMPI',0
 outputCMP   DC.B    'CMP',0
 outputBCLR  DC.B    'BCLR ',0
+outputLS    DC.B    'LS',0
+outputAS    DC.B    'AS',0
+outputRO    DC.B    'RO',0
+outputLeft  DC.B    'L',0
+outputRight DC.B    'R',0
+
 outputBCS   DC.B    'BCS ',0
 outputBGE   DC.B    'BGE ',0
 outputBCT   DC.B    'BCT ',0
 outputBVC   DC.B    'BVC ',0
-outputLSL   DC.B    'LSL',0
-outputLSR   DC.B    'LSR',0
-outputASL   DC.B    'ASL',0
-outputASR   DC.B    'ASR',0
-outputROL   DC.B    'ROL',0
-outputROR   DC.B    'ROR',0
 
 outputByte  DC.B    '.B ',0
 outputWord  DC.B    '.W ',0
