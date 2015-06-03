@@ -4,7 +4,7 @@
 * Date       :
 * Description:
 *-----------------------------------------------------------
-    ORG    $1000
+    ORG    $400
 START:                  ; first instruction of program
 
 * Put program code here
@@ -49,6 +49,7 @@ DONE
 
 
     END    START        ; last line of source
+
 
 
 
