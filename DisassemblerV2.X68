@@ -246,8 +246,48 @@ cmpiMethod
     BRA     DONE
     
 bclrOpCode
+    LEA     outputBCLR,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    MOVE.L  #10,D1
+    MOVE.L  D4,D5
+    ROL.W   D1,D5
+    AND.L   #$00000007,D5
+    
+    CMP.B   #2,D5
+    BEQ     bclrImmediate
+    
+    MOVE.L  #0,D2
+    MOVE.L  D4,D3
+    ROL.W   #7,D3
+    AND.L   #$00000007,D3
+    
+    JSR     DnMode
+    
+    LEA     outputComma,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    JSR     sourceEA
+    
+    BRA     DONE
+        
+bclrImmediate
+    
+    MOVE.L  #7,D2
+    MOVE.L  #4,D3
+    
+    JSR     immediateData
+    
+    LEA     outputComma,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    JSR     sourceEA
     
     BRA     DONE    
+  
 
     
 moveByteOpCode                  *MOVE.B opcode
@@ -528,7 +568,15 @@ eorOpCode
     CMP.B   #11,D5
     BNE     mulsWOpCode
     
+    MOVE.L  D4,D5
+    ROL.L   #8,D5
+    AND.L   #$00000001,D5
+    
+    
 eorMethod
+    CMP.B   #1,D5
+    BNE     cmpOpCode
+    
     LEA     outputEOR,A1
     MOVE.B  #14,D0
     TRAP    #15
@@ -544,6 +592,27 @@ eorMethod
     JSR     sourceEA
     
     BRA     DONE    
+
+cmpOpCode
+    CMP.B   #0,D5
+    BNE     DONE
+    
+    LEA     outputCMP,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    JSR     dotOpMode
+    
+    JSR     sourceEA
+    
+    LEA     outputComma,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    JSR     addDestinationEA
+    
+    BRA     DONE
+   
     
 mulsWOpCode
     CMP.B   #12,D5
@@ -1093,6 +1162,8 @@ outputORI   DC.B    'ORI',0
 outputOR    DC.B    'OR',0
 outputEOR   DC.B    'EOR',0
 outputCMPI  DC.B    'CMPI',0
+outputCMP   DC.B    'CMP',0
+outputBCLR  DC.B    'BCLR ',0
 outputBCS   DC.B    'BCS ',0
 outputBGE   DC.B    'BGE ',0
 outputBCT   DC.B    'BCT ',0
@@ -1120,6 +1191,7 @@ outputStart     DC.B    'Disassembling Initiated',0
 outputEnd       DC.B    'Program Disassembled',0
 outputContinue  DC.B    'Press ENTER key to continue disassembling',CR,LF,0
     END    $400        ; last line of source
+
 
 
 *~Font name~Courier New~
