@@ -162,11 +162,32 @@ nopOpCode
     
 rtsOpCode
     CMP.W   #$4E75,D4
-    BNE     leaOpCode
+    BNE     jsrOpCode
     
     LEA     outputRTS,A1
     MOVE.B  #14,D0
     TRAP    #15
+    
+jsrOpCode
+    MOVE.W  D4,D3
+    ROL.W   #8,D3
+    AND.W   #$00FF,D3
+    CMP.B   #$4E,D3
+    BNE     leaOpCode
+    
+jsrMethod
+    LEA     outputJSR,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    MOVE.L  A5,A0
+    MOVE.L  (A5)+,D4
+    MOVE.L  D4,D1
+    MOVE.B  #15,D0
+    MOVE.B  #16,D2
+    TRAP    #15
+    
+    BRA     DONE    
     
 leaOpCode
     CMP.B   #4,D5
@@ -968,7 +989,7 @@ negBit32
     
 bccOpCode
     CMP.B   #6,D5               *is it Bcc?
-    BNE     jsrOpCode          *its data then
+    BNE     dataOpCode          *its data then
     
 bccMethod
     MOVE.W  D4,D3
@@ -1010,26 +1031,7 @@ bvc
     
     BRA     bccDisplacement
     
-jsrOpCode
-    MOVE.W  D4,D3
-    ROL.W   #8,D3
-    AND.W   #$00FF,D3
-    CMP.B   #$4E,D3
-    BNE     dataOpCode
-    
-jsrMethod
-    LEA     outputJSR,A1
-    MOVE.B  #14,D0
-    TRAP    #15
-    
-    MOVE.L  A5,A0
-    MOVE.L  (A5)+,D4
-    MOVE.L  D4,D1
-    MOVE.B  #15,D0
-    MOVE.B  #16,D2
-    TRAP    #15
-    
-    BRA     DONE
+
            
 dataOpCode
     CLR.L   D3
@@ -1376,6 +1378,7 @@ outputStart     DC.B    'Disassembling Initiated',0
 outputEnd       DC.B    'Program Disassembled',0
 outputContinue  DC.B    'Press ENTER key to continue disassembling',CR,LF,0
     END    $1000        ; last line of source
+
 
 
 
