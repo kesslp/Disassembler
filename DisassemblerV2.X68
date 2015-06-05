@@ -180,7 +180,6 @@ jsrMethod
     BRA     outputData
         
 jsrOutputDeref
-    MOVE.L  #0,(A5)+
     LEA     outputJSR,A1
     MOVE.B  #14,D0
     TRAP    #15
@@ -811,10 +810,22 @@ shiftDestEA
     
 mulsWOpCode
     CMP.B   #12,D5
-    BNE     negOpCode    
+    BNE     mulsLOpCode
+    MOVE.W  D4,D3
+    ROR.W   #6,D3
+    AND.B   #7,D3
+    CMP.B   #7,D3
+    BNE     dataOpCode   
 
 mulsWMethod
-    LEA     outputMULSW,A1
+    MOVE.W  D4,D3
+    ROR.B   #3,D3
+    AND.B   #7,D3
+    CMP.B   #1,D3
+    BEQ     dataOpCode
+    
+mulsOutput    
+    LEA     outputMULS,A1
     MOVE.B  #14,D0
     TRAP    #15
     
@@ -827,6 +838,17 @@ mulsWMethod
     JSR     addDestinationEA
     
     BRA     DONE
+    
+mulsLOpCode
+    MOVE.W  D4,D3
+    MOVE.B  #10,D2
+    ROL.W   D2,D3
+    AND.W   #$01FF,D3
+    CMP.W   #304,D3
+    BNE     negOpCode
+    
+mulsLMethod
+        
     
 negOpCode
     MOVE.W  D4,D3
@@ -1351,7 +1373,7 @@ outputSUB   DC.B    'SUB',0
 outputSUBQ  DC.B    'SUBQ',0
 outputMOVE  DC.B    'MOVE',0
 outputMOVEA DC.B    'MOVEA',0
-outputMULSW DC.B    'MULS.W ',0
+outputMULS DC.B    'MULS ',0
 outputDIVSW DC.B    'DIVS.W ',0
 outputNOP   DC.B    'NOP ',0
 outputJSR   DC.B    'JSR ',0
@@ -1399,6 +1421,7 @@ outputStart     DC.B    'Disassembling Initiated',0
 outputEnd       DC.B    'Program Disassembled',0
 outputContinue  DC.B    'Press ENTER key to continue disassembling',CR,LF,0
     END    $1000        ; last line of source
+
 
 
 
