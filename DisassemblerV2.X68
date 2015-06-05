@@ -25,13 +25,10 @@ line_count  EQU 30
                 TRAP        #15                         
                 MOVE.B      #2, D0                      * take in user input as string
                 TRAP        #15
-                MOVE.L      (A1),ascii_val_start        * store ascii address in DC
                 MOVEM.W     A0-A6/D0-D7,-(SP)           * push registers on the stack
                 JSR         get_addr                    * strip ascii characters to hex
                 MOVEM.W     (SP)+, A0-A6/D0-D7          * restore registers
-                MOVE.W      addr_val_temp, st_val       * store address value into st_val
-                MOVE.W      st_val, D5                  * check if address is correct
-                CLR.L       ascii_val_start             * clr DC for end address input
+                MOVE.L      addr_val_temp,st_val
                 
                 LEA         end_addr_msg, A1            * ask for ending address
                 MOVE.B      #14, D0
@@ -39,14 +36,12 @@ line_count  EQU 30
                 MOVEA.L     A4,A1                       * reset address at A1 to get user input
                 MOVE.B      #2, D0                      * take address as a string
                 TRAP        #15
-                MOVE.L      (A1),ascii_val_start        * save in DC
                 MOVEM.W     A0-A6/D0-D7,-(SP)           * push registers on the stack
                 JSR         get_addr                    * strip ascii address into hex
                 MOVEM.W     (SP)+, A0-A6/D0-D7          * restore the registers
-                MOVE.W      addr_val_temp, end_val      * store address in end_val
-                MOVE.W      end_val, D6                 * check if result is correct
-                MOVEA.W     st_val,A5                   * store start val in A5
-                MOVEA.W     end_val,A6                  * store end val in A6
+                MOVE.L      addr_val_temp, end_val      * store address in end_val
+                MOVEA.L     st_val,A5                   * store start val in A5
+                MOVEA.L     end_val,A6                  * store end val in A6
                 
                 LEA         outputStart,A1              *ouput starting messaage
                 MOVE.B      #14,D0          
@@ -62,32 +57,29 @@ line_count  EQU 30
 
                 
 
-get_addr                            
-                CLR.W       D7                          * we need D7 to be 0
-                LEA         ascii_val_start, A1         * load ascii value to be stripped
+get_addr 
+                SUBQ.B      #1,D1
+                CLR.L       D7                          * we need D7 to be 0
                 MOVE.B      (A1)+,D0                    * store first byte in D0
-                ANDI.W      #ascii_mask,D0              * mask the first byte
+                ANDI.L      #ascii_mask,D0              * mask the first byte
                 JSR         strip_ascii                 * strip ascii char into hex
-                ASL.W       #8,D0                       * shift left 8
-                ASL.W       #4,D0                       * shift left 4
-                OR.W        D0,D7
+                MULS.W      #4,D1
+                ASL.L       D1,D0                       * shift left 8
+                OR.L        D0,D7
                 MOVE.B      (A1)+,D0                    * move next byte into D0
-                ANDI.W      #ascii_mask,D0              * mask the second byte
+loop            SUBQ.B      #4,D1
+                ANDI.L      #ascii_mask,D0              * mask the second byte
                 JSR         strip_ascii                 * strip ascii to hex
-                ASL.W       #8,D0                       * shift left 8
-                OR.W        D0,D7
-                MOVE.B      (A1)+,D0                    * move next byte into D0
-                ANDI.W      #ascii_mask,D0              * mask byte in D0
-                JSR         strip_ascii                 * strip ascii into hex
-                ASL.W       #4,D0                       * shift left 4
-                OR.W        D0,D7
-                MOVE.B      (A1)+,D0                    * move final byte into D0
-                ANDI.W      #ascii_mask,D0              * mask final byte
-                JSR         strip_ascii                 * strip it to hex
-                OR.W        D0,D7
-                MOVE.W      D7,addr_val_temp            * store hex address in temp value
-                RTS                                     * return
-     
+                ASL.L       D1,D0                       * shift left 8
+                OR.L        D0,D7
+                CMP.B       #0,D1
+                BEQ         rts_strtAddr
+                MOVE.B      (A1)+,D0
+                BRA         loop
+                
+rts_strtAddr
+                MOVE.L      D7,addr_val_temp
+                RTS     
                 
 strip_ascii     CMP.B       #$39,D0                     *Is it in range of 0-9?
                 BLE         sub30                       *It's a number
@@ -100,21 +92,19 @@ sub37           SUB.B       #$37,D0                     *Strip 37
 sub30           SUB.B       #$30,D0                     *Strip 30
 ret_sa          RTS                                     *Go back
 
-
+                
 *---- Data ----
 
 start_addr_msg  DC.B    'Enter a starting address to disassemble: $', 0
 end_addr_msg    DC.B    'Enter a ending address to stop disassembling: $', 0
-ascii_val_start DC.W    $0000
-ascii_val_end   DC.W    $0000
-addr_val_temp   DC.W    $0000
-st_val          DC.W    $0000
-end_val         DC.W    $0000
+addr_val_temp   DC.L    $00000000
+st_val          DC.L    $00000000
+end_val         DC.L    $00000000
 
 *--- Data end ----
 
 
-* Put program  here
+* Disassembler Start
 getOpCode                        *Gets opcode
     *LEA     code,A0             *Loads "code" which is the op code
     
@@ -168,6 +158,8 @@ rtsOpCode
     MOVE.B  #14,D0
     TRAP    #15
     
+    BRA     DONE
+    
 jsrOpCode
     MOVE.W  D4,D3
     ROL.W   #8,D3
@@ -176,18 +168,34 @@ jsrOpCode
     BNE     leaOpCode
     
 jsrMethod
+    MOVE.W  D4,D3
+    ROL.W   #3,D3
+    AND.B   #7,D3
+    CMP.B   #2,D3
+    BEQ     jsrOutputDeref
+    
+    CMP.B   #7,D3
+    BEQ     jsrOutputLabel
+    
+    BRA     outputData
+        
+jsrOutputDeref
+    MOVE.L  #0,(A5)+
     LEA     outputJSR,A1
     MOVE.B  #14,D0
     TRAP    #15
     
-    MOVE.L  A5,A0
-    MOVE.L  (A5)+,D4
-    MOVE.L  D4,D1
-    MOVE.B  #15,D0
-    MOVE.B  #16,D2
-    TRAP    #15
+    JSR     sourceEA
     
-    BRA     DONE    
+    BRA     DONE
+    
+jsrOutputLabel
+
+    CMP.B   #1,D3
+    BGT     dataOpCode
+    JSR     sourceEA
+    
+    BRA     DONE
     
 leaOpCode
     CMP.B   #4,D5
@@ -196,8 +204,24 @@ leaOpCode
     ROL.W   #8,D3
     CMP.B   #$44,D3
     BEQ     negMethod
-    CLR.L   D3
+    ROR.W   #8,D3
+    ROR.W   #7,D3
+    AND.B   #7,D3
+    CMP.B   #7,D3
+    BNE     dataOpCode
     
+    MOVE.W  D4,D3
+    ROR.W   #3,D3
+    AND.B   #7,D3
+    CMP.B   #2,D3
+    BEQ     leaOutput
+    
+    CMP.B   #7,D3
+    BEQ     leaOutput
+    
+    BRA     dataOpCode
+    
+leaOutput    
     LEA     outputLEA,A1
     MOVE.B  #14,D0
     TRAP    #15
@@ -308,8 +332,6 @@ bclrImmediate
     JSR     sourceEA
     
     BRA     DONE    
-  
-
     
 moveByteOpCode                  *MOVE.B opcode
     CMP.B   #1,D5
@@ -920,7 +942,6 @@ negBit16
     MOVE.B  #14,D0
     TRAP    #15
     
-    *MOVE.W  A5,A0
     SUBA.W  D4,A0
     MOVE.W  A0,D1
     MOVE.B  #15,D0
@@ -1378,6 +1399,7 @@ outputStart     DC.B    'Disassembling Initiated',0
 outputEnd       DC.B    'Program Disassembled',0
 outputContinue  DC.B    'Press ENTER key to continue disassembling',CR,LF,0
     END    $1000        ; last line of source
+
 
 
 
