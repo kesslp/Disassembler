@@ -165,7 +165,7 @@ jsrOpCode
     ROL.W   #8,D3
     AND.W   #$00FF,D3
     CMP.B   #$4E,D3
-    BNE     leaOpCode
+    BNE     movemOpCode
     
 jsrMethod
     MOVE.W  D4,D3
@@ -189,12 +189,82 @@ jsrOutputDeref
     BRA     DONE
     
 jsrOutputLabel
-
     CMP.B   #1,D3
     BGT     dataOpCode
     JSR     sourceEA
     
     BRA     DONE
+    
+movemOpCode
+    MOVE.W  D4,D3
+    ASR.W   #6,D3
+    CMP.W   #$0122,D3
+    BEQ     movemWMethodRegToMem
+    CMP.W   #$0132,D3
+    BEQ     movemWMEthodMemToReg
+    CMP.W   #$0123,D3
+    BEQ     movemLMethodRegToMem
+    CMP.W   #$0133,D3
+    BEQ     movemLMethodMemToReg
+    BRA     leaOpCode
+    
+movemWMethodRegToMem
+    MOVE.B  #0,D5                       *Register to memory baby!
+    MOVE.W  D4,D3
+    ROR.B   #3,D3
+    AND.W   #$0007,D3
+    CMP.B   #2,D3
+    BEQ     movemWOutput
+    CMP.B   #4,D3
+    BEQ     movemWOutput
+    CMP.B   #7,D3
+    BEQ     movemWOutput
+    BRA     dataOpCode
+    
+movemWOutputRegToMem
+    LEA     outputMOVEMW,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    BRA     DONE
+    
+movemWMethodMemToReg
+    MOVE.B  #1,D5                       *Memory to Register baby!
+    MOVE.W  D4,D3
+    ROR.B   #3,D3
+    AND.W   #$0007,D3
+    CMP.B   #2,D3
+    BEQ     movemWOutput
+    CMP.B   #4,D3
+    BEQ     movemWOutput
+    CMP.B   #7,D3
+    BEQ     movemWOutput
+    BRA     dataOpCode
+    
+movemLMethodRegToMem
+    MOVE.B  #0,D5                       *Register to memory baby!
+    MOVE.W  D4,D3
+    ROR.B   #3,D3
+    AND.W   #$0007,D3
+    CMP.B   #2,D3
+    BEQ     movemLOutput
+    CMP.B   #4,D3
+    BEQ     movemLOutput
+    CMP.B   #7,D3
+    BEQ     movemLOutput
+    BRA     dataOpCode
+
+movemLMethodMemToReg
+    MOVE.B  #1,D5                       *Memory to Register baby!
+    MOVE.W  D4,D3
+    ROR.B   #3,D3
+    AND.W   #$0007,D3
+    CMP.B   #2,D3
+    BEQ     movemLOutput
+    CMP.B   #4,D3
+    BEQ     movemLOutput
+    CMP.B   #7,D3
+    BEQ     movemLOutput
+    BRA     dataOpCode
     
 leaOpCode
     CMP.B   #4,D5
@@ -839,13 +909,13 @@ mulsOutput
     
     BRA     DONE
     
-mulsLOpCode
-    MOVE.W  D4,D3
-    MOVE.B  #10,D2
-    ROL.W   D2,D3
-    AND.W   #$01FF,D3
-    CMP.W   #304,D3
-    BNE     negOpCode
+mulsLOpCode *--------Do we need to do MULSL?
+*    MOVE.W  D4,D3
+*    MOVE.B  #10,D2
+*    ROL.W   D2,D3
+*    AND.W   #$01FF,D3
+*    CMP.W   #304,D3
+*    BNE     negOpCode
     
 mulsLMethod
         
@@ -1019,7 +1089,6 @@ negBit32
     MOVE.B  #14,D0
     TRAP    #15
     
-    *MOVE.L  A5,A0
     SUBA.L  D4,A0
     MOVE.L  A0,D1
     MOVE.B  #15,D0
@@ -1373,7 +1442,9 @@ outputSUB   DC.B    'SUB',0
 outputSUBQ  DC.B    'SUBQ',0
 outputMOVE  DC.B    'MOVE',0
 outputMOVEA DC.B    'MOVEA',0
-outputMULS DC.B    'MULS ',0
+outputMOVEMW DC.B   'MOVEM.W',0
+outputMOVEML DC.B   'MOVEM.L',0
+outputMULS DC.B     'MULS ',0
 outputDIVSW DC.B    'DIVS.W ',0
 outputNOP   DC.B    'NOP ',0
 outputJSR   DC.B    'JSR ',0
@@ -1421,6 +1492,7 @@ outputStart     DC.B    'Disassembling Initiated',0
 outputEnd       DC.B    'Program Disassembled',0
 outputContinue  DC.B    'Press ENTER key to continue disassembling',CR,LF,0
     END    $1000        ; last line of source
+
 
 
 
