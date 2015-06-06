@@ -220,13 +220,7 @@ movemWMethodRegToMem
     CMP.B   #7,D3
     BEQ     movemWOutput
     BRA     dataOpCode
-    
-movemWOutputRegToMem
-    LEA     outputMOVEMW,A1
-    MOVE.B  #14,D0
-    TRAP    #15
-    BRA     DONE
-    
+        
 movemWMethodMemToReg
     MOVE.B  #1,D5                       *Memory to Register baby!
     MOVE.W  D4,D3
@@ -239,6 +233,63 @@ movemWMethodMemToReg
     CMP.B   #7,D3
     BEQ     movemWOutput
     BRA     dataOpCode
+    
+movemWOutput
+
+    MOVE.W  D4,D3
+    CMP.B   #1,D5
+    BEQ     movemWOutput
+    
+    ASR.W   #3,D3
+    AND.W   #$0007,D3
+    CMP.B   #2,D3
+    BEQ     getAnMode
+    CMP.B   #4,D3
+    BEQ     getAnMode
+    CMP.B   #7,D3
+    BNE     dataOpCode
+    MOVE.B  D4,D3
+    AND.B   #$07,D3
+    CMP.B   #1,D3
+    BGT     dataOpCode
+    BRA     getAnMode
+    
+getAnMode
+    MOVE.B  D3,D2
+    
+movemWEA
+    MOVE.W  (A5)+,D3
+
+    LEA     outputMOVEMW,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    CMP.W   #$FFFF,D3
+    BEQ     outputReg
+  
+outputReg
+    LEA     outputRegList,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    LEA     outputComma,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    CMP.B   #4,D2
+    BLE     AnModeSub
+    BRA     xxxModeSub
+    
+    
+AnModeSub    
+    JSR     sourceEA
+    BRA     DONE
+    
+xxxModeSub
+    *JSR     xxxW
+    BRA     DONE    
+    
+moveMOutputMemToReg
     
 movemLMethodRegToMem
     MOVE.B  #0,D5                       *Register to memory baby!
@@ -265,6 +316,8 @@ movemLMethodMemToReg
     CMP.B   #7,D3
     BEQ     movemLOutput
     BRA     dataOpCode
+    
+movemLOutput
     
 leaOpCode
     CMP.B   #4,D5
@@ -1442,8 +1495,8 @@ outputSUB   DC.B    'SUB',0
 outputSUBQ  DC.B    'SUBQ',0
 outputMOVE  DC.B    'MOVE',0
 outputMOVEA DC.B    'MOVEA',0
-outputMOVEMW DC.B   'MOVEM.W',0
-outputMOVEML DC.B   'MOVEM.L',0
+outputMOVEMW DC.B   'MOVEM.W ',0
+outputMOVEML DC.B   'MOVEM.L ',0
 outputMULS DC.B     'MULS ',0
 outputDIVSW DC.B    'DIVS.W ',0
 outputNOP   DC.B    'NOP ',0
@@ -1464,6 +1517,7 @@ outputAS    DC.B    'AS',0
 outputRO    DC.B    'RO',0
 outputLeft  DC.B    'L',0
 outputRight DC.B    'R',0
+outputRegList DC.B  'A0-A7/D0-D7',0
 
 outputBCS   DC.B    'BCS ',0
 outputBGE   DC.B    'BGE ',0
@@ -1492,6 +1546,7 @@ outputStart     DC.B    'Disassembling Initiated',0
 outputEnd       DC.B    'Program Disassembled',0
 outputContinue  DC.B    'Press ENTER key to continue disassembling',CR,LF,0
     END    $1000        ; last line of source
+
 
 
 
