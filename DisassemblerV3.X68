@@ -283,7 +283,7 @@ getAnMode
     MOVE.B  D3,D2		
     		
 movemWEA		
-    MOVE.W  (A5)+,D3
+*    MOVE.W  (A5)+,D3
     CMP.B   #1,D6
     BEQ     displayMovemLong
 
@@ -291,32 +291,228 @@ displayMovemWord
     LEA     outputMOVEMW,A1		
     MOVE.B  #14,D0		
     TRAP    #15
-    BRA     regList
+    BRA     regToMem
 
 displayMovemLong
     LEA     outputMOVEML,A1		
     MOVE.B  #14,D0		
     TRAP    #15		
     
-regList    
-    CMP.B   #1,D5
-    BEQ     outputRegMemToReg
-		
-    CMP.W   #$FFFF,D3		
-    BEQ     outputReg		
-  		
-outputReg		
-    LEA     outputRegList,A1		
-    MOVE.B  #14,D0		
-    TRAP    #15		
-    		
-    LEA     outputComma,A1		
-    MOVE.B  #14,D0		
-    TRAP    #15		
-    		
-    CMP.B   #4,D2		
-    BLE     AnModeSub		
-    BRA     xxxModeSub	
+    
+regToMem
+    CLR.L   D5
+    CLR.L   D3
+    CLR.L   D2
+    CLR.L   D1
+    CLR.L   D6
+    CLR.L   D7
+    CLR.L   D4
+
+    CMP.B   #0,D5
+    BNE     memToReg
+    
+    MOVE.W  (A5)+,D5
+    MOVE.W  #16,D6
+    MOVE.B  #1,D2
+    
+    
+    
+    
+registerCheckerDn
+    CMP.B   #9,D2
+    BEQ     meepmeep
+
+    MOVE.W  D5,D3
+    ROL.W   D2,D3
+    AND.L   #$00000001,D3
+    ADD.B  #1,D2
+    
+meowmeow
+    CMP.B   #1,D3
+    BEQ     regBitSet           *Do shit
+
+    CMP.B   #0,D4
+    BEQ     registerCheckerDn   *the one before was a zero
+
+    BRA     registerOutput    *output stuff because there is a range
+    
+regBitSet
+    CMP.B   #1,D4
+    BNE   hamsters
+
+checkSeven                      *There is a range
+    MOVE.B  D2,D7
+    
+    BRA     registerCheckerDn
+    
+hamsters
+    MOVE.B  D2,D1       *sets the "start" of range
+    
+    MOVE.B  #1,D4       *there was a one
+    
+    BRA     registerCheckerDn
+    
+registerOutput
+    LEA     outputDn,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    SUBQ.B  #2,D1
+    MOVE.B  #3,D0
+    TRAP    #15
+    
+    CMP.B   #1,D7
+    BGE     outputpartfucking2
+    
+    LEA     outputSlash,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+
+    CLR.L   D4
+
+    BRA     registerCheckerDn  
+    
+outputpartfucking2
+    LEA     outputNegSign,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    LEA     outputDn,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    SUBQ.B  #2,D7
+    MOVE.L  D7,D1
+    MOVE.B  #3,D0
+    TRAP    #15
+    
+    LEA     outputSlash,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    CLR.L   D4
+    CLR.L   D7
+    
+    BRA     registerCheckerDn
+    
+meepmeep
+    LEA     outputSlash,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    CLR.L   D3
+    CLR.L   D4
+    CLR.L   D6
+    CLR.L   D7
+    CLR.L   D1
+    
+    
+registerCheckAn
+    CMP.B   #17,D2
+    BEQ     registerDone
+    
+    MOVE.W  D5,D3
+    ROL.W   D2,D3
+    AND.L   #$00000001,D3
+    ADD.B   #1,D2
+    
+registerRangeAn
+    CMP.B   #1,D3
+    BEQ     regBitSetAn           *Do shit
+
+    CMP.B   #0,D4
+    BEQ     registerCheckAn   *the one before was a zero
+
+    BRA     registerOutputAn    *output stuff because there is a range
+    
+regBitSetAn
+    CMP.B   #1,D4
+    BNE   hamstersAn
+
+checkSevenAn                      *There is a range
+    SUBQ.B  #8,D2
+    MOVE.B  D2,D7
+    ADD.B   #8,D2
+    
+    BRA     registerCheckAn
+    
+hamstersAn
+    SUBQ.B  #8,D2
+    MOVE.B  D2,D1       *sets the "start" of range
+    ADD.B   #8,D2
+    
+    MOVE.B  #1,D4       *there was a one
+    
+    BRA     registerCheckAn
+    
+registerOutputAn
+    LEA     outputAn,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    SUBQ.B  #2,D1
+    MOVE.B  #3,D0
+    TRAP    #15
+    
+    CMP.B   #1,D7
+    BGE     outputpartfucking2An
+    
+    LEA     outputSlash,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+
+    CLR.L   D4
+
+    BRA     registerCheckAn  
+    
+outputpartfucking2An
+    LEA     outputNegSign,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    LEA     outputAn,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    SUBQ.B  #2,D7
+    MOVE.L  D7,D1
+    MOVE.B  #3,D0
+    TRAP    #15
+    
+    LEA     outputSlash,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    CLR.L   D4
+    CLR.L   D7
+    
+    BRA     registerCheckAn
+    
+registerDone
+    CMP.B   #1,D7
+    BGE     registerOutputAn
+
+    RTS
+    
+*regList    
+*    CMP.B   #1,D5
+*    BEQ     outputRegMemToReg
+*		
+*    CMP.W   #$FFFF,D3		
+*    BEQ     outputReg		
+*  		
+*outputReg		
+*    LEA     outputRegList,A1		
+*    MOVE.B  #14,D0		
+*    TRAP    #15		
+*    		
+*    LEA     outputComma,A1		
+*    MOVE.B  #14,D0		
+*    TRAP    #15		
+*    		
+*    CMP.B   #4,D2		
+*    BLE     AnModeSub		
+*    BRA     xxxModeSub	
 
 outputRegMemToReg
     CMP.B   #4,D2		
@@ -324,13 +520,13 @@ outputRegMemToReg
     BRA     xxxModeSub
 
 memToReg
-    LEA     outputComma,A1		
-    MOVE.B  #14,D0		
-    TRAP    #15	
-    		
-    LEA     outputRegList,A1		
-    MOVE.B  #14,D0		
-    TRAP    #15
+*    LEA     outputComma,A1		
+*    MOVE.B  #14,D0		
+*    TRAP    #15	
+*    		
+*    LEA     outputRegList,A1		
+*    MOVE.B  #14,D0		
+*    TRAP    #15
     
     BRA DONE
     		
@@ -1689,7 +1885,7 @@ outputAS    DC.B    'AS',0
 outputRO    DC.B    'RO',0
 outputLeft  DC.B    'L',0
 outputRight DC.B    'R',0
-outputRegList DC.B  'A0-A7/D0-D7',0
+*outputRegList DC.B  'A0-A7/D0-D7',0
 
 
 outputBCS   DC.B    'BCS ',0
@@ -1711,6 +1907,7 @@ outputDn    DC.B    'D',0
 outputPound DC.B    '#',0
 outputAddr  DC.B    '   $',0
 outputCurrentAddr   DC.W    $0000
+outputSlash DC.B    '/',0
 
 outputComma     DC.B    ',',0
 outputDot       DC.B    '.',0
@@ -1722,6 +1919,7 @@ outputStart     DC.B    'Disassembling Initiated',0
 outputEnd       DC.B    'Program Disassembled',0
 outputContinue  DC.B    'Press ENTER key to continue disassembling',CR,LF,0
     END    $1000        ; last line of source
+
 
 
 
