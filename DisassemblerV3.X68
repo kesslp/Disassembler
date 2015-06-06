@@ -202,45 +202,53 @@ movemOpCode
     MOVE.W  D4,D3		
     ASR.W   #6,D3		
     CMP.W   #$0122,D3		
-    BEQ     movemWMethodRegToMem		
+    BEQ     movemMethodRegToMem		
     CMP.W   #$0132,D3		
-    BEQ     movemWMEthodMemToReg		
+    BEQ     movemMethodMemToReg		
     CMP.W   #$0123,D3		
-    BEQ     movemLMethodRegToMem		
+    BEQ     movemLongRegToMem		
     CMP.W   #$0133,D3		
-    BEQ     movemLMethodMemToReg		
-    BRA     leaOpCode		
+    BEQ     movemLongMemToReg		
+    BRA     leaOpCode
+
+movemLongRegToMem
+    MOVE.B  #1,D6
+    BRA     movemMethodRegToMem 
+
+movemLongMemToReg
+    MOVE.B  #1,D6
+    BRA     movemMethodMemToReg		
     		
-movemWMethodRegToMem		
+movemMethodRegToMem		
     MOVE.B  #0,D5                       *Register to memory baby!		
     MOVE.W  D4,D3		
     ROR.B   #3,D3		
     AND.W   #$0007,D3		
     CMP.B   #2,D3		
-    BEQ     movemWOutput		
+    BEQ     movemOutput		
     CMP.B   #4,D3		
-    BEQ     movemWOutput		
+    BEQ     movemOutput		
     CMP.B   #7,D3		
-    BEQ     movemWOutput		
+    BEQ     movemOutput		
     BRA     dataOpCode		
         		
-movemWMethodMemToReg		
+movemMethodMemToReg		
     MOVE.B  #1,D5                       *Memory to Register baby!		
     MOVE.W  D4,D3		
     ROR.B   #3,D3		
     AND.W   #$0007,D3		
     CMP.B   #2,D3		
-    BEQ     movemWOutput		
-    CMP.B   #4,D3		
-    BEQ     movemWOutput		
+    BEQ     movemOutput		
+    CMP.B   #3,D3		
+    BEQ     movemOutput		
     CMP.B   #7,D3		
-    BEQ     movemWOutput		
+    BEQ     movemOutput		
     BRA     dataOpCode		
     		
-movemWOutput		
+movemOutput		
     MOVE.W  D4,D3		
     CMP.B   #1,D5		
-    BEQ     movemWOutput		
+    BEQ     movemOutputMemToReg		
     		
     ASR.W   #3,D3		
     AND.W   #$0007,D3		
@@ -256,15 +264,44 @@ movemWOutput
     BGT     dataOpCode		
     BRA     getAnMode		
     		
+movemOutputMemToReg
+    ASR.W   #3,D3
+    AND.W   #$0007,D3
+    CMP.B   #2,D3
+    BEQ     getAnMode
+    CMP.B   #3,D3
+    BEQ     getAnMode
+    CMP.B   #7,D3
+    BNE     dataOpCode
+    MOVE.B  D4,D3
+    AND.B   #$07,D3
+    CMP.B   #1,D3
+    BGT     dataOpCode
+    BRA     getAnMode
+    		
 getAnMode		
     MOVE.B  D3,D2		
     		
 movemWEA		
-    MOVE.W  (A5)+,D3		
+    MOVE.W  (A5)+,D3
+    CMP.B   #1,D6
+    BEQ     displayMovemLong
+
+displayMovemWord		
     LEA     outputMOVEMW,A1		
     MOVE.B  #14,D0		
+    TRAP    #15
+    BRA     regList
+
+displayMovemLong
+    LEA     outputMOVEML,A1		
+    MOVE.B  #14,D0		
     TRAP    #15		
-    		
+    
+regList    
+    CMP.B   #1,D5
+    BEQ     outputRegMemToReg
+		
     CMP.W   #$FFFF,D3		
     BEQ     outputReg		
   		
@@ -279,46 +316,36 @@ outputReg
     		
     CMP.B   #4,D2		
     BLE     AnModeSub		
-    BRA     xxxModeSub		
+    BRA     xxxModeSub	
+
+outputRegMemToReg
+    CMP.B   #4,D2		
+    BLE     AnModeSub		
+    BRA     xxxModeSub
+
+memToReg
+    LEA     outputComma,A1		
+    MOVE.B  #14,D0		
+    TRAP    #15	
     		
+    LEA     outputRegList,A1		
+    MOVE.B  #14,D0		
+    TRAP    #15
+    
+    BRA DONE
     		
 AnModeSub    		
-    JSR     sourceEA		
+    JSR     sourceEA
+    CMP.B   #1,D5
+    BEQ     memToReg		
     BRA     DONE		
     		
 xxxModeSub		
-    JSR     xxxWord		
+    JSR     xxxWord
+    CMP.B   #1,D5
+    BEQ     memToReg		
     BRA     DONE    		
-    		
-moveMOutputMemToReg		
-    		
-movemLMethodRegToMem		
-    MOVE.B  #0,D5                       *Register to memory baby!		
-    MOVE.W  D4,D3		
-    ROR.B   #3,D3		
-    AND.W   #$0007,D3		
-    CMP.B   #2,D3		
-    BEQ     movemLOutput		
-    CMP.B   #4,D3		
-    BEQ     movemLOutput		
-    CMP.B   #7,D3		
-    BEQ     movemLOutput		
-    BRA     dataOpCode		
-movemLMethodMemToReg		
-    MOVE.B  #1,D5                       *Memory to Register baby!		
-    MOVE.W  D4,D3		
-    ROR.B   #3,D3		
-    AND.W   #$0007,D3		
-    CMP.B   #2,D3		
-    BEQ     movemLOutput		
-    CMP.B   #4,D3		
-    BEQ     movemLOutput		
-    CMP.B   #7,D3		
-    BEQ     movemLOutput		
-    BRA     dataOpCode		
-    		
-movemLOutput
-    
+    		    
 leaOpCode
     CMP.B   #4,D5
     BNE     oriOpCode
@@ -1695,6 +1722,7 @@ outputStart     DC.B    'Disassembling Initiated',0
 outputEnd       DC.B    'Program Disassembled',0
 outputContinue  DC.B    'Press ENTER key to continue disassembling',CR,LF,0
     END    $1000        ; last line of source
+
 
 
 
