@@ -661,9 +661,9 @@ cmpiMethod
     MOVE.B  #14,D0
     TRAP    #15
     
-    JSR     dotOpMode
+    JSR     dotOpMode           *byte/word/long
     
-    MOVE.L  #7,D2
+    MOVE.L  #7,D2               *source is always immediate
     MOVE.L  #4,D3
     JSR     immediateData
     
@@ -671,20 +671,20 @@ cmpiMethod
     MOVE.B  #14,D0
     TRAP    #15
     
-    JSR     sourceEA
+    JSR     sourceEA            *checks what the destination is
     BRA     DONE
     
-bclrOpCode
+bclrOpCode                      *it's a BCLR
     LEA     outputBCLR,A1
     MOVE.B  #14,D0
     TRAP    #15
     
-    MOVE.L  #10,D1
+    MOVE.L  #10,D1              
     MOVE.L  D4,D5
     ROL.W   D1,D5
     AND.L   #$00000007,D5
     
-    CMP.B   #2,D5
+    CMP.B   #2,D5               
     BEQ     bclrImmediate
     
     MOVE.L  #0,D2
@@ -967,11 +967,11 @@ display8ForSubQ
     
     RTS                         *return to subQMethod
 
-orOpCode
+orOpCode                        *OR opcode
     CMP.B   #8,D5   
     BNE     eorOpCode
     
-    MOVE.L  D4,D5
+    MOVE.L  D4,D5               *if not OR then it's a DIVS
     MOVE.L  #10,D1
     ROL.W   D1,D5
     
@@ -987,7 +987,7 @@ orMethod
     
     JSR     dotOpMode
     
-    CMP.B   #1,D6
+    CMP.B   #1,D6               
     BEQ     altOrder
     
     JSR     sourceEA
@@ -1001,11 +1001,8 @@ orMethod
     BRA     DONE
     
 divsWOpCode
-*    CMP.B   #8,D5
-*    BEQ     divsWCheck          *bits 8,7,6 need to make 7 to be DIVSW
-*    BRA     eorOpCode
-*    
-divsWCheck
+    
+divsWCheck                      *DIVS
     MOVE.W  D4,D3
     MOVE.B  #10,D2
     ROL.W   D2,D3
@@ -1027,7 +1024,7 @@ divsWCheck
     
     BRA     DONE
     
-eorOpCode
+eorOpCode                       *it's a EOR
     CMP.B   #11,D5
     BNE     shiftsOpCode
     
@@ -1056,7 +1053,7 @@ eorMethod
     
     BRA     DONE    
 
-cmpOpCode
+cmpOpCode                       *it's CMP
     CMP.B   #0,D5
     BNE     DONE
     
@@ -1076,11 +1073,11 @@ cmpOpCode
     
     BRA     DONE
    
-shiftsOpCode
+shiftsOpCode                    *it's a shift
     CMP.B   #14,D5
     BNE     mulsWOpCode
     
-shiftMemoryShift
+shiftMemoryShift                *checks if it's a memory shift or register shift
     MOVE.L  D4,D5
     ROR.W   #6,D5
     AND.L   #$00000003,D5
@@ -1092,7 +1089,7 @@ shiftMemoryShift
     ROL.W   #7,D5
     AND.L   #$00000003,D5
     
-memoryLSD
+memoryLSD                       *it's memory LSL or LSR
     CMP.B   #1,D5
     BNE     memoryASD
     
@@ -1110,7 +1107,7 @@ memoryLSD
     
     BRA     DONE
     
-memoryASD
+memoryASD                       *it's memory ASL or ASR
     CMP.B   #0,D5
     BNE     memoryROD
     
@@ -1128,7 +1125,7 @@ memoryASD
     
     BRA     DONE
     
-memoryROD
+memoryROD                       *it's memory ROL or ROR
     CMP.B   #3,D5
     BNE     dataOpCode
     
@@ -1148,12 +1145,12 @@ memoryROD
     
     
     
-shiftRegisterShift
+shiftRegisterShift              *it's a register shift
     MOVE.L  D4,D5
     ROR.W   #3,D5
     AND.L   #$00000003,D5
     
-lsdOpCode
+lsdOpCode                       *it's a LSL or LSR
     CMP.B   #1,D5
     BNE     asdOpCode
     
@@ -1162,7 +1159,7 @@ lsdMethod
     MOVE.B  #14,D0
     TRAP    #15
     
-    JSR     leftRight
+    JSR     leftRight           
     
     JSR     dotOpMode
     
@@ -1176,7 +1173,7 @@ lsdMethod
     
     BRA     DONE
  
-asdOpCode
+asdOpCode                       *it's ASL or ASR
     CMP.B   #0,D5
     BNE     rodOpCode
     
@@ -1198,7 +1195,7 @@ asdOpCode
     
     BRA     DONE
     
-rodOpCode
+rodOpCode                       *It's ROR or ROL
     CMP.B   #3,D5
     BNE     DONE
     
@@ -1220,7 +1217,7 @@ rodOpCode
     
     BRA     DONE
     
-leftRight
+leftRight                       *checks if it's R or L
     MOVE.L  D4,D3
     ROL.W   #8,D3
     AND.L   #$00000001,D3
@@ -1241,7 +1238,7 @@ rightRight
     
     RTS
     
-shiftSourceEA
+shiftSourceEA                   *special EA for shifts
     MOVE.L  D4,D2
     ROR.W   #5,D2
     AND.L   #$00000001,D2
@@ -1263,7 +1260,7 @@ shiftSourceEA
     
     RTS
     
-shiftImmediateEA
+shiftImmediateEA                *special EA for immediates
     LEA     outputPound,A1
     MOVE.B  #14,D0
     TRAP    #15
@@ -1277,14 +1274,14 @@ shiftImmediateEA
     
     RTS
     
-shiftImmediateEight
+shiftImmediateEight             *since 8 is a special case
     MOVE.L  #8,D1
     MOVE.B  #3,D0
     TRAP    #15
     
     RTS
     
-shiftDestEA
+shiftDestEA                     *destination EA for shifts
     MOVE.L  D4,D3
     AND.L   #$00000007,D3
     
@@ -1298,7 +1295,7 @@ shiftDestEA
     
     RTS
     
-mulsWOpCode
+mulsWOpCode                     *MULS W
     CMP.B   #12,D5
     BNE     negOpCode
     MOVE.W  D4,D3
@@ -1307,14 +1304,14 @@ mulsWOpCode
     CMP.B   #7,D3
     BNE     dataOpCode   
 
-mulsWMethod
+mulsWMethod                     *MULS W
     MOVE.W  D4,D3
     ROR.B   #3,D3
     AND.B   #7,D3
     CMP.B   #1,D3
     BEQ     dataOpCode
     
-mulsOutput    
+mulsOutput                      *
     LEA     outputMULS,A1
     MOVE.B  #14,D0
     TRAP    #15
@@ -1340,7 +1337,7 @@ mulsOutput
 mulsLMethod
         
     
-negOpCode
+negOpCode                       *NEG
     MOVE.W  D4,D3
     ROL.W   #8,D3
     CMP.B   #$44,D3
@@ -1740,7 +1737,7 @@ deRefAnMode                     *Mode is a (A0)?
     
     RTS                         *=-=
     
-postIncrementAnMode
+postIncrementAnMode                 *(An)+
     CMP.B   #3,D2
     BNE     preDecrementAnMode
     
@@ -1758,7 +1755,7 @@ postIncrementAnMode
     
     RTS
     
-preDecrementAnMode
+preDecrementAnMode                  *-(An)
     CMP.B   #4,D2
     BNE     immediateData
     
@@ -1808,7 +1805,7 @@ immediateDatapt2               *Outputs register value
 
     RTS                         *~owo~
     
-xxxWord
+xxxWord                         *(xxx).W 
     CMP.B   #7,D2
     BNE     xxxLong
     
@@ -1826,7 +1823,7 @@ xxxWord
     
     RTS
     
-xxxLong
+xxxLong                         *(xxx).L
     CMP.B   #7,D2
     BNE     DONE
     
@@ -1994,6 +1991,7 @@ outputStart     DC.B    'Disassembling Initiated',0
 outputEnd       DC.B    'Program Disassembled',0
 outputContinue  DC.B    'Press ENTER key to continue disassembling',CR,LF,0
     END    $1000        ; last line of source
+
 
 
 
