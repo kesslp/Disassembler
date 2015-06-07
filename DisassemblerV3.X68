@@ -300,29 +300,48 @@ displayMovemLong
     
     
 regToMem
-    CLR.L   D5
     CLR.L   D3
     CLR.L   D2
     CLR.L   D1
     CLR.L   D6
     CLR.L   D7
-    CLR.L   D4
 
     CMP.B   #0,D5
     BNE     memToReg
+    
+    CLR.L   D5
     
     MOVE.W  (A5)+,D5
     MOVE.W  #16,D6
     MOVE.B  #1,D2
     
+    MOVE.W D4,-(A7)
     
+    CLR.L   D4
     
+    JSR     registerCheckerDn
     
+    MOVE.W  (A7)+,D4
+    
+    LEA     outputComma,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    JSR     sourceEA
+    
+    BRA     DONE
+    
+  
 registerCheckerDn
     CMP.B   #9,D2
     BEQ     meepmeep
 
     MOVE.W  D5,D3
+    
+    ROL.W   D2,D5
+    AND.L   #$FFFFFFFE,D5
+    ROR.W   D2,D5
+    
     ROL.W   D2,D3
     AND.L   #$00000001,D3
     ADD.B  #1,D2
@@ -362,7 +381,7 @@ registerOutput
     TRAP    #15
     
     CMP.B   #1,D7
-    BGE     outputpartfucking2
+    BGE     outputpart2
     
     LEA     outputSlash,A1
     MOVE.B  #14,D0
@@ -372,7 +391,7 @@ registerOutput
 
     BRA     registerCheckerDn  
     
-outputpartfucking2
+outputpart2
     LEA     outputNegSign,A1
     MOVE.B  #14,D0
     TRAP    #15
@@ -396,10 +415,6 @@ outputpartfucking2
     BRA     registerCheckerDn
     
 meepmeep
-    LEA     outputSlash,A1
-    MOVE.B  #14,D0
-    TRAP    #15
-    
     CLR.L   D3
     CLR.L   D4
     CLR.L   D6
@@ -412,6 +427,11 @@ registerCheckAn
     BEQ     registerDone
     
     MOVE.W  D5,D3
+    
+    ROL.W   D2,D5
+    AND.L   #$FFFFFFFE,D5
+    ROR.W   D2,D5
+    
     ROL.W   D2,D3
     AND.L   #$00000001,D3
     ADD.B   #1,D2
@@ -455,17 +475,23 @@ registerOutputAn
     TRAP    #15
     
     CMP.B   #1,D7
-    BGE     outputpartfucking2An
+    BGE     outputpart2An
+        
+    
+displaySlash
+    CMP.W   #1,D5
+    BLT     ignoreSlash
     
     LEA     outputSlash,A1
     MOVE.B  #14,D0
     TRAP    #15
 
+ignoreSlash
     CLR.L   D4
 
     BRA     registerCheckAn  
     
-outputpartfucking2An
+outputpart2An
     LEA     outputNegSign,A1
     MOVE.B  #14,D0
     TRAP    #15
@@ -479,10 +505,15 @@ outputpartfucking2An
     MOVE.B  #3,D0
     TRAP    #15
     
+*displaySlash
+    CMP.W   #1,D5
+    BLT     ignoreSlashAn
+
     LEA     outputSlash,A1
     MOVE.B  #14,D0
     TRAP    #15
     
+ignoreSlashAn    
     CLR.L   D4
     CLR.L   D7
     
@@ -494,53 +525,63 @@ registerDone
 
     RTS
     
-*regList    
-*    CMP.B   #1,D5
-*    BEQ     outputRegMemToReg
-*		
-*    CMP.W   #$FFFF,D3		
-*    BEQ     outputReg		
-*  		
-*outputReg		
-*    LEA     outputRegList,A1		
-*    MOVE.B  #14,D0		
-*    TRAP    #15		
-*    		
-*    LEA     outputComma,A1		
-*    MOVE.B  #14,D0		
-*    TRAP    #15		
-*    		
-*    CMP.B   #4,D2		
-*    BLE     AnModeSub		
-*    BRA     xxxModeSub	
-
-outputRegMemToReg
-    CMP.B   #4,D2		
-    BLE     AnModeSub		
-    BRA     xxxModeSub
-
 memToReg
-*    LEA     outputComma,A1		
-*    MOVE.B  #14,D0		
-*    TRAP    #15	
-*    		
-*    LEA     outputRegList,A1		
-*    MOVE.B  #14,D0		
-*    TRAP    #15
-    
-    BRA DONE
-    		
-AnModeSub    		
+
     JSR     sourceEA
-    CMP.B   #1,D5
-    BEQ     memToReg		
-    BRA     DONE		
-    		
-xxxModeSub		
-    JSR     xxxWord
-    CMP.B   #1,D5
-    BEQ     memToReg		
-    BRA     DONE    		
+    
+    CLR.L   D3
+    CLR.L   D1
+    CLR.L   D6
+    CLR.L   D5
+    
+    LEA     outputComma,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    MOVE.W  (A5)+,D5
+    MOVE.W  #16,D6
+    MOVE.B  #1,D2
+    
+    MOVE.W  D5,D6
+    
+    
+mirrorShift
+    CMP.B   #15,D1
+    BEQ     moveMContinue
+    
+    ADD.B   #1,D1
+    
+    ASR.W   #1,D6
+    BCS     addBit
+    
+    BRA     zeroBit
+    
+addBit
+    ADD.B   #1,D3
+    ASL.W   #1,D3
+    BRA     mirrorShift
+    
+zeroBit
+    ASL.W   #1,D3
+    BRA     mirrorShift 
+    
+
+moveMContinue
+
+    MOVE.W  D3,D5
+    CLR.L   D6
+    CLR.L   D3
+    CLR.L   D1
+    
+    MOVE.W  D4,-(A7)
+    
+    CLR.L   D4
+    
+    JSR     registerCheckerDn
+    
+    MOVE.W  (A7)+,D4   
+     
+    BRA DONE    		
     		    
 leaOpCode
     CMP.B   #4,D5
@@ -1919,6 +1960,7 @@ outputStart     DC.B    'Disassembling Initiated',0
 outputEnd       DC.B    'Program Disassembled',0
 outputContinue  DC.B    'Press ENTER key to continue disassembling',CR,LF,0
     END    $1000        ; last line of source
+
 
 
 
