@@ -298,63 +298,63 @@ displayMovemLong
     TRAP    #15		
     
     
-regToMem
+regToMem                        *Register to memory for MOVEM
     CLR.L   D3
     CLR.L   D2
     CLR.L   D1
     CLR.L   D6
     CLR.L   D7
 
-    CMP.B   #0,D5
+    CMP.B   #0,D5               *Checks if it's a Memory to Register for MOVEM
     BNE     memToReg
     
     CLR.L   D5
     
-    MOVE.W  (A5)+,D5
-    MOVE.W  #16,D6
-    MOVE.B  #1,D2
+    MOVE.W  (A5)+,D5            *Gets the register masks
+    MOVE.W  #16,D6              *since there is 16 bits
+    MOVE.B  #1,D2               *Start the counter
     
-    MOVE.W D4,-(A7)
+    MOVE.W D4,-(A7)             *saves it for the effective address later
     
     CLR.L   D4
     
-    JSR     registerCheckerDn
+    JSR     registerCheckerDn   *time to output the registers
     
-    MOVE.W  (A7)+,D4
+    MOVE.W  (A7)+,D4            *bring the effective address 
     
     LEA     outputComma,A1
     MOVE.B  #14,D0
     TRAP    #15
     
-    JSR     sourceEA
+    JSR     sourceEA            *go output the stack pointer
     
     BRA     DONE
     
   
-registerCheckerDn
+registerCheckerDn               *checks the data registers first
     CMP.B   #9,D2
-    BEQ     meepmeep
-
+    BEQ     meepmeep            *once done checking data registers
+                                *have to go check the address registers
     MOVE.W  D5,D3
     
-    ROL.W   D2,D5
-    AND.L   #$FFFFFFFE,D5
+    ROL.W   D2,D5               *sets the bit being checked to 0
+    AND.L   #$FFFFFFFE,D5       *to know it has been checked
     ROR.W   D2,D5
     
-    ROL.W   D2,D3
+    ROL.W   D2,D3               *gets the bit to be checked
     AND.L   #$00000001,D3
-    ADD.B  #1,D2
+    ADD.B  #1,D2                *add to the counter
     
-meowmeow
+meowmeow                        *checks if there is a range or not
     CMP.B   #1,D3
-    BEQ     regBitSet           *Do shit
+    BEQ     regBitSet           *the bit has been set
 
     CMP.B   #0,D4
     BEQ     registerCheckerDn   *the one before was a zero
 
     BRA     registerOutput    *output stuff because there is a range
     
-regBitSet
+regBitSet                       *if a range has started
     CMP.B   #1,D4
     BNE   hamsters
 
@@ -363,23 +363,23 @@ checkSeven                      *There is a range
     
     BRA     registerCheckerDn
     
-hamsters
-    MOVE.B  D2,D1       *sets the "start" of range
+hamsters                        *start of a range or just a solo register
+    MOVE.B  D2,D1               *sets the "start" of range
     
-    MOVE.B  #1,D4       *there was a one
+    MOVE.B  #1,D4               *sets D4 to one to indicate there is a range
     
     BRA     registerCheckerDn
     
-registerOutput
+registerOutput                  *outputs the registers
     LEA     outputDn,A1
     MOVE.B  #14,D0
     TRAP    #15
     
-    SUBQ.B  #2,D1
+    SUBQ.B  #2,D1               *have to set the number to proper register number
     MOVE.B  #3,D0
     TRAP    #15
     
-    CMP.B   #1,D7
+    CMP.B   #1,D7               *check if have to output a range
     BGE     outputpart2
     
     LEA     outputSlash,A1
@@ -388,9 +388,9 @@ registerOutput
 
     CLR.L   D4
 
-    BRA     registerCheckerDn  
+    BRA     registerCheckerDn       *do it again
     
-outputpart2
+outputpart2                         *For outputting ranges
     LEA     outputNegSign,A1
     MOVE.B  #14,D0
     TRAP    #15
@@ -411,9 +411,9 @@ outputpart2
     CLR.L   D4
     CLR.L   D7
     
-    BRA     registerCheckerDn
+    BRA     registerCheckerDn       *do it again
     
-meepmeep
+meepmeep                            *Checks the address registers
     CLR.L   D3
     CLR.L   D4
     CLR.L   D6
@@ -422,7 +422,7 @@ meepmeep
     
     
 registerCheckAn
-    CMP.B   #17,D2
+    CMP.B   #17,D2                  *sets the max
     BEQ     registerDone
     
     MOVE.W  D5,D3
@@ -457,10 +457,10 @@ checkSevenAn                      *There is a range
     
 hamstersAn
     SUBQ.B  #8,D2
-    MOVE.B  D2,D1       *sets the "start" of range
+    MOVE.B  D2,D1               *sets the "start" of range
     ADD.B   #8,D2
     
-    MOVE.B  #1,D4       *there was a one
+    MOVE.B  #1,D4               *there was a one
     
     BRA     registerCheckAn
     
@@ -477,7 +477,7 @@ registerOutputAn
     BGE     outputpart2An
         
     
-displaySlash
+displaySlash                    *displays slash or not
     CMP.W   #1,D5
     BLT     ignoreSlash
     
@@ -518,15 +518,15 @@ ignoreSlashAn
     
     BRA     registerCheckAn
     
-registerDone
+registerDone                    *all registers have been checked
     CMP.B   #1,D7
     BGE     registerOutputAn
 
     RTS
     
-memToReg
+memToReg                        *It's a memory to register
 
-    JSR     sourceEA
+    JSR     sourceEA            *outputs the stack pointer first
     
     CLR.L   D3
     CLR.L   D1
@@ -537,14 +537,14 @@ memToReg
     MOVE.B  #14,D0
     TRAP    #15
     
-    MOVE.W  (A5)+,D5
+    MOVE.W  (A5)+,D5            *gets the register masks
     MOVE.W  #16,D6
     MOVE.B  #1,D2
     
     MOVE.W  D5,D6
     
     
-mirrorShift
+mirrorShift                     *shifting the register masks to mimic the Register to Memory
     CMP.B   #15,D1
     BEQ     moveMContinue
     
@@ -565,7 +565,7 @@ zeroBit
     BRA     mirrorShift 
     
 
-moveMContinue
+moveMContinue               *continue with outputting registers
 
     MOVE.W  D3,D5
     CLR.L   D6
@@ -580,7 +580,7 @@ moveMContinue
     
     MOVE.W  (A7)+,D4   
      
-    BRA DONE    		
+    BRA DONE    		*done
     		    
 leaOpCode
     CMP.B   #4,D5               *is it a possible LEA?
@@ -621,18 +621,17 @@ leaOutput
     
     BRA     DONE                *we are done
     
-oriOpCode                       *OR opcode
+oriOpCode                       *ORI opcode
     CMP.B   #0,D5               
     BNE     moveByteOpCode      *if not, go to next opcode
-
-*-------------------------------------------------Change this when merging         
-    MOVE.W  D4,D2
+      
+    MOVE.W  D4,D2               *Checks if it really is a ORI or some other opcode 
     ROL.W   #8,D2
     AND.L   #$0000000F,D2
     
     MOVE.L  D2,D5
     
-oriMethod
+oriMethod                       *it's an ORI
     CMP.B   #0,D5
     BNE     cmpiOpCode
     
@@ -640,24 +639,24 @@ oriMethod
     MOVE.B  #14,D0
     TRAP    #15
     
-    JSR     dotOpMode
+    JSR     dotOpMode           *check if it's a byte/word/long
         
-    MOVE.L  #7,D2
+    MOVE.L  #7,D2               *source is always an immediate
     MOVE.L  #4,D3
     JSR     immediateData
     
-    LEA     outputComma,A1
+    LEA     outputComma,A1  
     MOVE.B  #14,D0
     TRAP    #15
     
-    JSR     sourceEA
+    JSR     sourceEA            *checks what the destination is
     BRA     DONE
 
-cmpiOpCode
+cmpiOpCode                      *if it's not ORI then check if it's CMPI
     CMP.B   #12,D5
-    BNE     bclrOpCode
+    BNE     bclrOpCode          *if it's not, then it's a BCLR
     
-cmpiMethod
+cmpiMethod                      
     LEA     outputCMPI,A1
     MOVE.B  #14,D0
     TRAP    #15
@@ -1995,6 +1994,7 @@ outputStart     DC.B    'Disassembling Initiated',0
 outputEnd       DC.B    'Program Disassembled',0
 outputContinue  DC.B    'Press ENTER key to continue disassembling',CR,LF,0
     END    $1000        ; last line of source
+
 
 
 
